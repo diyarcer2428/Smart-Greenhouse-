@@ -21,6 +21,15 @@ An IoT-based smart greenhouse system using an ESP8266 NodeMCU microcontroller. T
 - *Buzzer:* Positive to D7, Negative to G
 - *Fan and Pump:* Negative to G, Positive to NO on relay
 - *LCD:* VCC to 3.3V, GND to G, SDA to D2, SCL to D1
+- 
+## 🔌 Wiring Connections
+
+| Component | NodeMCU Pin | Description |
+|------------|--------------|-------------|
+| DHT11 Sensor | D2 | Data pin |
+| Soil Moisture Sensor | A0 | Analog output |
+| Buzzer | D5 | Positive terminal |
+| Common Ground | G | All GND connections |
 
 ## Features
 - Real-time temperature, humidity, and soil moisture monitoring
@@ -30,12 +39,20 @@ An IoT-based smart greenhouse system using an ESP8266 NodeMCU microcontroller. T
 - Cloud data logging and remote monitoring via ThingSpeak IoT platform
 
 ## Usage Instructions 
-- Upload the provided Arduino sketch to the ESP8266 using Arduino IDE
-- Connect sensors and actuators as per wiring instructions
-- Configure WiFi credentials and ThingSpeak API key in the code
-- Power the system and monitor live environment data locally and remotely on ThingSpeak
-- Adjust sensor thresholds to customize automation as per your greenhouse needs
+1. Open the code below in **Arduino IDE**  
+2. Install required libraries:
+   - `ESP8266WiFi.h`
+   - `ThingSpeak.h`
+   - `DHT.h`
+3. Update the WiFi credentials (`ssid`, `password`) and ThingSpeak details (`channelID`, `writeAPIKey`)  
+4. Connect components according to the wiring table  
+5. Upload the code to your NodeMCU board  
+6. Open Serial Monitor and observe live data  
+7. Check data remotely on your **ThingSpeak dashboard**
+
   ## 💻 Arduino Code
+
+
 
 ```cpp
 #include <ESP8266WiFi.h>
