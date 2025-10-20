@@ -29,12 +29,133 @@ An IoT-based smart greenhouse system using an ESP8266 NodeMCU microcontroller. T
 - Data display on LCD for easy status visualization
 - Cloud data logging and remote monitoring via ThingSpeak IoT platform
 
-## Usage
+## Usage Instructions 
 - Upload the provided Arduino sketch to the ESP8266 using Arduino IDE
 - Connect sensors and actuators as per wiring instructions
 - Configure WiFi credentials and ThingSpeak API key in the code
 - Power the system and monitor live environment data locally and remotely on ThingSpeak
 - Adjust sensor thresholds to customize automation as per your greenhouse needs
+  ## 💻 Arduino Code
+
+```cpp
+#include <ESP8266WiFi.h>
+#include <ThingSpeak.h>
+#include "DHT.h"
+
+// ---------- PIN DEFINITIONS ----------
+#define DHTPIN D2           // DHT11 Data Pin
+#define DHTTYPE DHT11
+#define SOILPIN A0          // Soil Moisture Analog Pin
+#define BUZZER D5           // Buzzer Pin
+
+// ---------- WiFi & ThingSpeak ----------
+const char* ssid = ""; 
+const char* password = ""; 
+
+unsigned long channelID = 3111183;            // ThingSpeak channel ID
+const char* writeAPIKey = "56M44PYUELKEI77T"; // ThingSpeak read API key
+
+WiFiClient client;
+DHT dht(DHTPIN, DHTTYPE);
+
+unsigned long lastDHTRead = 0;
+unsigned long lastThingSpeakUpdate = 0;
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+  pinMode(BUZZER, OUTPUT);
+
+  Serial.println("🌱 Smart Greenhouse System Starting...");
+
+  // Connect to WiFi
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\n✅ WiFi Connected!");
+  ThingSpeak.begin(client);
+}
+
+void loop() {
+  bool buzzerState = LOW;  // Default buzzer OFF
+
+  // ----- SOIL MOISTURE SENSOR -----
+  int soilValue = analogRead(SOILPIN);
+  Serial.print("🌱 Soil Moisture Value: ");
+  Serial.println(soilValue);
+
+  if (soilValue > 800) {
+    Serial.println("⚠️ Soil is very dry!");
+    buzzerState = HIGH;
+  } else if (soilValue > 500) {
+    Serial.println("🙂 Soil is moist.");
+  } else {
+    Serial.println("💧 Soil is wet.");
+  }
+
+  // ----- DHT11 SENSOR every 3 sec -----
+  if (millis() - lastDHTRead > 3000) {
+    lastDHTRead = millis();
+    float h = dht.readHumidity();
+    float t = dht.readTemperature();
+
+    if (isnan(h) || isnan(t)) {
+      Serial.println("❌ Failed to read from DHT sensor!");
+    } else {
+      Serial.print("🌡 Temperature: ");
+      Serial.print(t);
+      Serial.print("°C, Humidity: ");
+      Serial.print(h);
+      Serial.println("%");
+
+      // ----- TEMPERATURE ALERT -----
+      if (t > 32) {
+        Serial.println("🔥 High Temperature Alert!");
+        buzzerState = HIGH;
+      } else if (t < 18) {
+        Serial.println("❄️ Low Temperature Alert!");
+        buzzerState = HIGH;
+      }
+
+      // ----- HUMIDITY ALERT -----
+      if (h < 40) {
+        Serial.println("💨 Low Humidity Alert!");
+        buzzerState = HIGH;
+      } else if (h > 100) {
+        Serial.println("💦 High Humidity Alert!");
+        buzzerState = HIGH;
+      }
+    }
+    Serial.println("-----------------------------");
+  }
+
+  // ----- Set Buzzer State -----
+  digitalWrite(BUZZER, buzzerState);
+
+  // ----- ThingSpeak update every 20 sec -----
+  if (millis() - lastThingSpeakUpdate > 20000) {
+    lastThingSpeakUpdate = millis();
+    if (WiFi.status() == WL_CONNECTED) {
+      ThingSpeak.setField(1, dht.readTemperature());
+      ThingSpeak.setField(2, dht.readHumidity());
+      ThingSpeak.setField(3, soilValue);
+      int response = ThingSpeak.writeFields(channelID, writeAPIKey);
+      if (response == 200) {
+        Serial.println("✅ ThingSpeak Updated");
+      } else {
+        Serial.print("❌ ThingSpeak update failed, code: ");
+        Serial.println(response);
+      }
+    } else {
+      Serial.println("❌ WiFi not connected, cannot update ThingSpeak");
+    }
+  }
+
+  delay(1000); // Sensor updates every second
+}
 
 ## Author
 Diya Risa Chacko 
